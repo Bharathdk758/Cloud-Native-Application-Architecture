@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="mystyle.css">
+	<title>House Price Prediction</title>
+</head>
+<body>
+	<h1>House Price Prediction</h1>
+	<form id="predictionForm" onsubmit="event.preventDefault(); predictHousePrice()">
+		<label for="area">Area (sqft): </label>
+		<input type="number" id="area" name="area" value="1000"><br>
+
+		<label for="bedrooms">Number of Bedrooms: </label>
+		<input type="number" id="bedrooms" name="bedrooms" value="2"><br>
+
+		<label for="bathrooms">Number of Bathrooms: </label>
+		<input type="number" id="bathrooms" name="bathrooms" value="1"><br>
+
+		<label for="stories">Number of Stories: </label>
+		<input type="number" id="stories" name="stories" value="2"><br>
+
+		<label for="mainroad">Main Road Facing? </label>
+		<input type="radio" id="mainroad_yes" name="mainroad" value="yes">Yes</input>
+		<input type="radio" id="mainroad_no" name="mainroad" value="no" checked>No</input><br>
+
+		<label for="guestroom">Has Guest Room? </label>
+		<input type="radio" id="guestroom_yes" name="guestroom" value="yes">Yes</input>
+		<input type="radio" id="guestroom_no" name="guestroom" value="no" checked>No</input><br>
+
+		<label for="basement">Has Basement? </label>
+		<input type="radio" id="basement_yes" name="basement" value="yes">Yes</input>
+		<input type="radio" id="basement_no" name="basement" value="no" checked>No</input><br>
+
+		<label for="hotwaterheating">Has Hot Water Heating? </label>
+		<input type="radio" id="hotwaterheating_yes" name="hotwaterheating" value="yes">Yes</input>
+		<input type="radio" id="hotwaterheating_no" name="hotwaterheating" value="no" checked>No</input><br>
+
+		<label for="airconditioning">Has Air Conditioning? </label>
+		<input type="radio" id="airconditioning_yes" name="airconditioning" value="yes">Yes</input>
+		<input type="radio" id="airconditioning_no" name="airconditioning" value="no" checked>No</input><br>
+
+		<label for="parking">Has Parking? </label>
+		<input type="radio" id="parking_yes" name="parking" value="yes">Yes</input>
+		<input type="radio" id="parking_no" name="parking" value="no" checked>No</input><br>
+
+		<label for="prefarea">Preferred Location? </label>
+		<input type="radio" id="prefarea_yes" name="prefarea" value="yes">Yes</input>
+		<input type="radio" id="prefarea_no" name="prefarea" value="no" checked>No</input><br>
+
+		<label for="latitude">Latitude:</label>
+    	<input type="text" id="latitude" name="latitude" value="40.712776">
+
+    	<label for="longitude">Longitude:</label>
+    	<input type="text" id="longitude" name="longitude" value="-74.005974">
+
+		<button type="submit">Predict Price</button>
+	</form>
+
+	<p id="predictedValue"></p>
+	<p id="address"></p>
+	<p id="temperature"></p>
+	<div id="photos"></div>
+
+
+	<script>
+		function predictHousePrice() {
+			// Get input values
+		const area = document.getElementById("area").value;
+        const bedrooms = document.getElementById("bedrooms").value;
+		const bathrooms = document.getElementById("bathrooms").value;
+		const stories = document.getElementById("stories").value;
+		const mainroad = document.getElementById("mainroad_yes").checked ? 1 : 0;
+		const guestroom = document.getElementById("guestroom_yes").checked ? 1 : 0;
+		const basement = document.getElementById("basement_yes").checked ? 1 : 0;
+		const hotwaterheating = document.getElementById("hotwaterheating_yes").checked ? 1 : 0;
+		const airconditioning = document.getElementById("airconditioning_yes").checked ? 1 : 0;
+		const parking = document.getElementById("parking_yes").checked ? 1 : 0;
+		const prefarea = document.getElementById("prefarea_yes").checked ? 1 : 0;
+
+		const lat = document.getElementById("latitude").value;
+		const lon = document.getElementById("longitude").value;
+
+		var url = 'http://localhost:8000/photos.json?lat=' + lat + '&lon=' + lon;
+
+        $.getJSON(url, function(data) {
+          var html = '';
+          $.each(data.photos.photo, function(index, photo) {
+            html += '<img src="https://farm' + photo.farm + '.staticflickr.com/' + photo.server + '/' + photo.id + '_' + photo.secret + '.jpg">';
+          });
+          $('#photos').html(html);
+        });
+
+		fetch('http://localhost:10000/?lat=' + lat + '&lon=' + lon)
+.then(response =>response.json())
+.then(dataObj => {
+    const address = dataObj.address;
+    const state_adjacent = dataObj.state_adjacent; 
+	const temperature = dataObj.temperature;
+    document.getElementById("address").textContent = `Address: ${address}`;
+	document.getElementById("temperature").textContent = `Temperature: ${temperature} fahrenheit`;
+    // Multiply predicted value with state_adjacent
+    fetch(`http://localhost:8080/?area=${area}&bedrooms=${bedrooms}&bathrooms=${bathrooms}&stories=${stories}&mainroad=${mainroad}&guestroom=${guestroom}&basement=${basement}&hotwaterheating=${hotwaterheating}&airconditioning=${airconditioning}&parking=${parking}&prefarea=${prefarea}`)
+    .then(response => response.json())
+    .then(data => {
+        // Display predicted value multiplied by state_adjacent
+        const predictedValue = data.predictedValue;
+        const stateValue = predictedValue * state_adjacent;
+        document.getElementById("predictedValue").textContent = `Predicted Price: $${stateValue}`;
+    })
+    .catch(error => console.log(error));
+})
+.catch(error => console.log(error));
+	}
+</script>
+</body>
+</html>
